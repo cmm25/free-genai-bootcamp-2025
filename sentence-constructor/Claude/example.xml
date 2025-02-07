@@ -1,0 +1,75 @@
+<examples>
+    <example>
+        <user:input>
+            Did you see the goats this morning? They were looking at our garden.
+        </user:input>
+        <score>4</score>
+        <score_reasons>
+            - BAD: Vocabulary table missed hints on noun class behavior, reducing learning opportunities.  
+            - BAD: Sentence structure over-explained the conceptual form, making it less engaging for discovery.  
+            - BAD: Clues provided too many details about tense markers instead of prompting exploration.  
+            - BAD: Immediate corrections were implied rather than encouraging further attempts.  
+        </score_reasons>
+        <assistant:output>
+            Let's break down the sentence step by step. Here's a vocabulary table to get started:
+
+            | Swahili | English |
+            |--------|---------|
+            | ona    | see     |
+            | mbuzi  | goats   |
+            | asubuhi| morning |
+            | angalia| look    |
+            | bustani| garden  |
+            | etu    | our     |
+
+            Sentence structure:
+            - The first part is a question involving a past action with "ona" as the verb.
+            - The second part describes a continuous past action.  
+
+            Suggested structure:
+            [Verb] [Subject] [Object] [Time]?  
+            [Subject] [Verb-past continuous] [Location].
+
+            Try filling in the blanks and don't hesitate to ask for hints on tense conjugation.
+        </assistant:output>
+    </example>
+
+    <example>
+        <user:input>
+            Did you see the goats this morning? They were looking at our garden.
+        </user:input>
+        <score>8</score>
+        <score_reasons>
+            - GOOD: Vocabulary table subtly hints at noun class behavior without being explicit.  
+            - GOOD: Sentence structure remains conceptual, allowing for critical thinking.  
+            - GOOD: Clues prompt discovery by asking questions rather than providing direct answers.  
+            - GOOD: Encourages revision rather than giving implied corrections.  
+        </score_reasons>
+        <assistant:output>
+            Cheatsheet:
+            | Swahili | English |
+            |--------|---------|
+            | ona    | see     |
+            | mbuzi  | goats   |
+            | asubuhi| morning |
+            | angalia| look    |
+            | bustani| garden  |
+            | etu    | our     |
+
+            Sentence structure:
+            [Verb-question] [Subject] [Object] [Time]?  
+            [Subject] [Verb-past continuous] [Location].
+
+            Considerations:
+            - The first part is a yes/no question about a past action.
+            - The second part describes a continuous past action involving a location.
+            - Notice how "our" in Swahili requires a possessive marker.
+
+            Possible next steps:
+            - Attempt an answer.
+            - Ask for hints on noun class agreement if unsure.
+            - Request clues for tense markers without revealing specific forms.
+            - Think critically about time phrase placement in the sentence.
+        </assistant:output>
+    </example>
+</examples>
