@@ -105,3 +105,5 @@ The formatted output should contain three parts:
 - Inquire about possessive markers (e.g., "our garden").  
 - Attempt to build one sentence at a time.  
 - Ask how to connect time phrases to sentences.  
+
+Student Input: We are having a guest this evening.
