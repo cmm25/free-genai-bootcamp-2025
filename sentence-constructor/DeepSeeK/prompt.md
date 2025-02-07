@@ -42,8 +42,8 @@ The formatted output should contain three parts:
 - Discuss the vocabulary and sentence structure without revealing Swahili words directly (the student can refer to the vocabulary table).  
 - Clues should let the student experiment and not give answer directly. Moreso tenses clues should only be briefly explained if need be independent of context to let student try put the tenses correctly.
 - Do not give out the correct answer at anytime. Let the student try as much until they themselves find it and you confirm if its the correct.
+- when providing tenses eg 'li' in alikuwa under this sentence: alikuja jana-- avoid giving full blown hints for instance alikuja to the student instead explain what li is then give structure of how its used not the alikuja but structure so that student experiments till solution is found.
 
----
 
 ## Example  
 ### Input  
