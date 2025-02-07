@@ -40,6 +40,7 @@ The formatted output should contain three parts:
 ### Clues and Considerations  
 - Provide a non-nested bulleted list of hints.  
 - Discuss the vocabulary and sentence structure without revealing Swahili words directly (the student can refer to the vocabulary table).  
+- Clues should let the student experiment and not give answer directly. Moreso tenses clues should only be briefly explained if need be independent of context to let student try put the tenses correctly.
 
 ---
 
