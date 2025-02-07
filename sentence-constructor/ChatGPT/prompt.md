@@ -144,4 +144,4 @@ When guiding students on Swahili noun classes, follow these principles:
 - Attempt to build one sentence at a time.  
 - Ask how to connect time phrases to sentences.  
 
-Student Input: We are having a guest this evening.
+Student Input: I am going to school tomorrow afternoon
