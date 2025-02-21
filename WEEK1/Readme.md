@@ -99,267 +99,117 @@ Below are models representing the tables of the database schema:
 ## API ENDPOINTS DOCUMENTATION
 
 ### Base URL
-
 All API endpoints are prefixed with `/api/`
 
 ### Dashboard Endpoints
 
 #### Get Last Study Session
-
 ```
 GET /api/dashboard/last_study_session/
-
-Response 200:
-{
-    "id": 123,
-    "group_id": 456,
-    "created_at": "2024-03-14T12:00:00Z",
-    "study_activity_id": 789,
-    "group_name": "Basic Greetings"
-}
 ```
 
 #### Get Study Progress
-
 ```
 GET /api/dashboard/study_progress/
-
-Response 200:
-{
-    "current_group": {
-        "id": 1,
-        "name": "Basic Greetings",
-        "total_words": 50,
-        "words_studied": 30,
-        "progress_percentage": 60.0,
-        "total_reviews": 100,
-        "correct_reviews": 85,
-        "accuracy": 85.0
-    },
-    "all_groups_progress": [
-        {
-            "group_id": 1,
-            "group_name": "Basic Greetings",
-            "total_words": 50,
-            "words_studied": 30,
-            "progress_percentage": 60.0,
-            "accuracy": 85.0
-        }
-    ],
-    "overall_progress": {
-        "total_words_studied": 45,
-        "total_available_words": 100,
-        "overall_progress_percentage": 45.0
-    }
-}
+Query Parameters:
+- group_id (optional): Filter progress for specific group
 ```
 
 #### Get Quick Stats
-
 ```
 GET /api/dashboard/quick-stats/
-
-Response 200:
-{
-    "success_rate": 85.0,
-    "total_study_sessions": 25,
-    "total_active_groups": 3,
-    "study_streak_days": 5
-}
 ```
 
 ### Word Endpoints
 
-#### List Words
-
+#### List/Create Words
 ```
-GET /api/words/
+GET, POST /api/words/
+Query Parameters:
+- search: Search words by Swahili or English text
+- page: Page number for pagination
+- items_per_page: Number of items per page (default: 100)
+```
 
-Parameters:
-- page (optional): Page number for pagination
-- items_per_page (optional): Number of items per page (default: 100)
-
-Response 200:
-{
-    "items": [
-        {
-            "id": 1,
-            "Swahili": "jambo",
-            "Pronounciation": "jahm-boh",
-            "English": "hello",
-            "correct_count": 10,
-            "wrong_count": 2,
-            "categories": [
-                {
-                    "id": 1,
-                    "name": "Greetings",
-                    "description": "Basic greetings"
-                }
-            ],
-            "groups": [
-                {
-                    "id": 1,
-                    "name": "Basic Greetings",
-                    "stats": {
-                        "correct_count": 8,
-                        "wrong_count": 1
-                    }
-                }
-            ]
-        }
-    ],
-    "pagination": {
-        "current_page": 1,
-        "total_pages": 5,
-        "total_items": 500,
-        "items_per_page": 100
-    }
-}
+#### Get/Update/Delete Word
+```
+GET, PUT, DELETE /api/words/:id/
 ```
 
 #### Get Word Stats
-
 ```
 GET /api/words/:id/stats/
-
-Response 200:
-{
-    "word": {
-        "id": 1,
-        "swahili": "jambo",
-        "english": "hello"
-    },
-    "stats": {
-        "total_reviews": 12,
-        "correct_reviews": 10,
-        "accuracy": 83.33
-    }
-}
 ```
 
 ### Group Endpoints
 
-#### List Groups
-
+#### List/Create Groups
 ```
-GET /api/groups/
-
-Response 200:
-{
-    "items": [
-        {
-            "id": 1,
-            "name": "Basic Greetings",
-            "description": "Common greetings in Swahili",
-            "word_count": 20,
-            "stats": {
-                "total_word_count": 20,
-                "sessions_count": 5,
-                "progress": {
-                    "total_words": 20,
-                    "words_studied": 15,
-                    "progress_percentage": 75.0,
-                    "total_reviews": 45,
-                    "correct_reviews": 38,
-                    "accuracy": 84.4
-                },
-                "category_distribution": {
-                    "Nouns": 8,
-                    "Verbs": 5,
-                    "Expressions": 7
-                }
-            },
-            "categories": [
-                {
-                    "id": 1,
-                    "name": "Beginner",
-                    "description": "Beginner level words"
-                }
-            ]
-        }
-    ],
-    "pagination": {
-        "current_page": 1,
-        "total_pages": 1,
-        "total_items": 10,
-        "items_per_page": 100
-    }
-}
+GET, POST /api/groups/
+Query Parameters:
+- category: Filter groups by category
+- page: Page number for pagination
 ```
 
-### Study Session Endpoints
-
-#### List Study Sessions
-
+#### Get/Update/Delete Group
 ```
-GET /api/study_sessions/
-
-Response 200:
-{
-    "items": [
-        {
-            "id": 123,
-            "activity_name": "Vocabulary Quiz",
-            "group_name": "Basic Greetings",
-            "creation_time": "2024-03-14T12:00:00Z",
-            "end_time": "2024-03-14T12:15:00Z",
-            "review_items_count": 20,
-            "duration": 900
-        }
-    ],
-    "pagination": {
-        "current_page": 1,
-        "total_pages": 5,
-        "total_items": 100,
-        "items_per_page": 100
-    }
-}
+GET, PUT, DELETE /api/groups/:id/
 ```
 
-#### Create Word Review
-
+#### List Group Words
 ```
-POST /api/study_sessions/:id/words/:word_id/review/
-
-Request Body:
-{
-    "correct": true
-}
-
-Response 200:
-{
-    "success": true,
-    "word_id": 1,
-    "study_session_id": 123,
-    "correct": true,
-    "created_at": "2024-03-14T12:10:00Z"
-}
+GET /api/groups/:id/words/
 ```
 
-### System Reset Endpoints
+#### List Group Study Sessions
+```
+GET /api/groups/:id/study_sessions/
+```
+
+### Study Activities Endpoints
+
+#### Create Study Activity
+```
+POST /api/study_activities/
+```
+
+#### Get Study Activity
+```
+GET /api/study_activities/:id/
+```
+
+#### List Activity Sessions
+```
+GET /api/study_activities/:id/study_sessions/
+```
+
+### Study Sessions Endpoints
+
+#### List/Create Sessions
+```
+GET, POST /api/study_sessions/
+```
+
+#### Get/Update/Delete Session
+```
+GET, PUT, DELETE /api/study_sessions/:id/
+```
+
+#### List Session Words
+```
+GET /api/study_sessions/:id/words/
+```
+
+### System Management Endpoints
 
 #### Reset Study History
-
 ```
 POST /api/reset_history/
-
-Response 200:
-{
-    "success": true,
-    "message": "Study history has been reset"
-}
 ```
 
 #### Full System Reset
-
 ```
 POST /api/full_reset/
-
-Response 200:
-{
-    "success": true,
-    "message": "System has been fully reset"
-}
 ```
 
 ### Error Responses
@@ -367,24 +217,21 @@ Response 200:
 All endpoints may return the following error responses:
 
 #### Not Found (404)
-
-```
+```json
 {
     "error": "Resource not found"
 }
 ```
 
 #### Bad Request (400)
-
-```
+```json
 {
     "error": "Invalid request parameters"
 }
 ```
 
 #### Server Error (500)
-
-```
+```json
 {
     "error": "Internal server error"
 }
@@ -392,9 +239,7 @@ All endpoints may return the following error responses:
 
 ## Testing with Postman
 
-1. Import the collection using this link: [Postman Collection Link]
-2. Set up environment variables:
-   - `base_url`: Your server URL (e.g., `http://localhost:8000`)
-3. All endpoints are prefixed with `/api/`
-4. No authentication is required
-5. Use the provided example responses to validate your API responses
+1. Base URL: `http://localhost:8000/api/`
+2. No authentication required
+3. All responses are in JSON format
+4. Use the provided example responses to validate your API responses

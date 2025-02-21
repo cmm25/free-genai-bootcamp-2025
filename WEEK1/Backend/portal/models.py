@@ -76,11 +76,11 @@ class WordGroup(models.Model):
 
     @property
     def study_sessions_count(self):
-        return self.student_study_groups.count()
+        return self.study_sessions.count()
 
     def get_progress_stats(self):
         total_words = self.words.count()
-        sessions = self.student_study_groups.all()
+        sessions = self.study_sessions.all()
         reviews = Word_Review.objects.filter(study_session_id__in=sessions)
         unique_words_studied = reviews.values('word_id').distinct().count()
         total_reviews = reviews.count()
@@ -98,7 +98,10 @@ class WordGroup(models.Model):
 
 class Study_Sessions(models.Model):
     Group = models.ForeignKey(
-        WordGroup, on_delete=models.CASCADE, related_name='student_study_groups')
+        WordGroup,
+        on_delete=models.CASCADE,
+        related_name='study_sessions'  # Changed from 'student_study_groups'
+    )
     creation_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
     study_activity_id = models.IntegerField()
@@ -123,13 +126,19 @@ class Study_Sessions(models.Model):
 
 class Study_Activities(models.Model):
     study_session_id = models.ForeignKey(
-        Study_Sessions, on_delete=models.CASCADE, related_name='parent_study_group')
+        Study_Sessions,
+        on_delete=models.CASCADE,
+        related_name='activities'  # Changed from 'parent_study_group'
+    )
     Group = models.ForeignKey(
-        WordGroup, on_delete=models.CASCADE, related_name='student_study_groups')
+        WordGroup,
+        on_delete=models.CASCADE,
+        related_name='study_activities'  # Changed from 'student_study_groups'
+    )
     creation_time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        return f"Study activitiy of Group{self.Group.Name} for session {self.study_session_id.study_activity_id}"
+        return f"Study activity of Group {self.Group.Name} for session {self.study_session_id.study_activity_id}"
 
 
 class Word_Review(models.Model):

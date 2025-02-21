@@ -99,7 +99,8 @@ class DashboardLastSessionView(APIView):
 
     def get(self, request):
         try:
-            last_session = Study_Sessions.objects.select_related('Group').latest('creation_time')
+            last_session = Study_Sessions.objects.select_related(
+                'Group').latest('creation_time')
 
             return Response({
                 "id": last_session.id,
@@ -119,13 +120,15 @@ class DashboardQuickStatsView(APIView):
         # Get total reviews and correct reviews
         total_reviews = Word_Review.objects.count()
         correct_reviews = Word_Review.objects.filter(correct=True).count()
-        success_rate = (correct_reviews / total_reviews * 100) if total_reviews > 0 else 0
+        success_rate = (correct_reviews / total_reviews *
+                        100) if total_reviews > 0 else 0
         total_sessions = Study_Sessions.objects.count()
         active_groups = WordGroup.objects.filter(
             student_study_groups__isnull=False
         ).distinct().count()
         today = timezone.now().date()
-        sessions_by_date = Study_Sessions.objects.values('creation_time__date').distinct()
+        sessions_by_date = Study_Sessions.objects.values(
+            'creation_time__date').distinct()
         streak_days = 0
 
         for i in range(7):
@@ -184,3 +187,184 @@ class StudyActivityCreateView(APIView):
             return Response({
                 "error": str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class WordListView(generics.ListCreateAPIView):
+    queryset = Words.objects.all()
+    serializer_class = WordsSerializer
+    pagination_class = ResultsSetPagination
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['Swahili', 'English']
+
+
+class WordDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update or delete a word
+    """
+    queryset = Words.objects.all()
+    serializer_class = WordsSerializer
+    lookup_field = 'id'
+
+
+class GroupWordsView(generics.ListAPIView):
+    """
+    List words in a specific group
+    """
+    serializer_class = WordsSerializer
+    pagination_class = ResultsSetPagination
+
+    def get_queryset(self):
+        group_id = self.kwargs['id']
+        return Words.objects.filter(word_groups__id=group_id)
+
+
+class WordGroupDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update or delete a word group
+    """
+    queryset = WordGroup.objects.all()
+    serializer_class = WordGroupSerializer
+    lookup_field = 'id'
+
+
+class GroupStudySessionsView(generics.ListAPIView):
+    """
+    List study sessions for a specific group
+    """
+    serializer_class = SessionsSerializer
+    pagination_class = ResultsSetPagination
+
+    def get_queryset(self):
+        group_id = self.kwargs['id']
+        return Study_Sessions.objects.filter(Group_id=group_id).order_by('-creation_time')
+
+
+class StudySessionListView(generics.ListCreateAPIView):
+    """
+    List all study sessions or create a new one
+    """
+    queryset = Study_Sessions.objects.all().order_by('-creation_time')
+    serializer_class = SessionsSerializer
+    pagination_class = ResultsSetPagination
+
+
+class StudySessionDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Retrieve, update or delete a study session
+    """
+    queryset = Study_Sessions.objects.all()
+    serializer_class = SessionsSerializer
+    lookup_field = 'id'
+
+
+class SessionWordsView(generics.ListAPIView):
+    """
+    List words reviewed in a specific study session
+    """
+    serializer_class = WordsSerializer
+    pagination_class = ResultsSetPagination
+
+    def get_queryset(self):
+        session_id = self.kwargs['id']
+        return Words.objects.filter(word_review__study_session_id=session_id).distinct()
+
+
+class ResetHistoryView(APIView):
+    """
+    Reset study history
+    """
+
+    def post(self, request):
+        try:
+            Word_Review.objects.all().delete()
+            Study_Sessions.objects.all().delete()
+            Study_Activities.objects.all().delete()
+            return Response({
+                "success": True,
+                "message": "Study history has been reset"
+            })
+        except Exception as e:
+            return Response({
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class FullResetView(APIView):
+    """
+    Full system reset
+    """
+
+    def post(self, request):
+        try:
+            Word_Review.objects.all().delete()
+            Study_Sessions.objects.all().delete()
+            Study_Activities.objects.all().delete()
+            WordGroup.objects.all().delete()
+            Words.objects.all().delete()
+            return Response({
+                "success": True,
+                "message": "System has been fully reset"
+            })
+        except Exception as e:
+            return Response({
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class WordReviewStatsView(APIView):
+
+    def get(self, request, word_id):
+        try:
+            word = get_object_or_404(Words, id=word_id)
+            reviews = Word_Review.objects.filter(word_id=word)
+
+            total_reviews = reviews.count()
+            correct_reviews = reviews.filter(correct=True).count()
+            accuracy = (correct_reviews / total_reviews *
+                        100) if total_reviews > 0 else 0
+
+            return Response({
+                "word": {
+                    "id": word.id,
+                    "swahili": word.Swahili,
+                    "english": word.English
+                },
+                "stats": {
+                    "total_reviews": total_reviews,
+                    "correct_reviews": correct_reviews,
+                    "accuracy": round(accuracy, 2)
+                }
+            })
+        except Words.DoesNotExist:
+            return Response({
+                "error": "Word not found"
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class WordGroupListView(generics.ListCreateAPIView):
+    queryset = WordGroup.objects.all()
+    serializer_class = WordGroupSerializer
+    pagination_class = ResultsSetPagination
+
+    def get_queryset(self):
+        queryset = WordGroup.objects.all()
+        # Add category filter if provided
+        category = self.request.query_params.get('category', None)
+        if category:
+            queryset = queryset.filter(categories__name=category)
+        return queryset.annotate(
+            total_words=Count('words'),
+            studied_words=Count(
+                'student_study_groups__word_review__word_id', distinct=True)
+        )
+
+    def perform_create(self, serializer):
+        group = serializer.save()
+        # Handle categories if provided in request
+        categories = self.request.data.get('categories', [])
+        if categories:
+            group.categories.set(categories)

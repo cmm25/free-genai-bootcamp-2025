@@ -76,14 +76,15 @@ class WordsSerializer(serializers.ModelSerializer):
 
 
 class WordGroupSerializer(serializers.ModelSerializer):
-    word_count = serializers.IntegerField(source='total_word_count', read_only=True)
+    word_count = serializers.IntegerField(
+        source='total_word_count', read_only=True)
     stats = serializers.SerializerMethodField()
     categories = WordCategorySerializer(many=True, read_only=True)
 
     class Meta:
         model = WordGroup
         fields = ['id', 'name', 'description', 'word_count', 'stats',
-                    'categories', 'created_at']
+                  'categories', 'created_at']
 
     def get_stats(self, obj):
         base_stats = {
@@ -114,7 +115,7 @@ class WordReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Word_Review
         fields = ['id', 'word_id', 'word_details',
-                    'study_session_id', 'correct', 'creation_time']
+                  'study_session_id', 'correct', 'creation_time']
         read_only_fields = ['creation_time']
 
     def validate_correct(self, value):
@@ -145,7 +146,7 @@ class SessionsSerializer(serializers.ModelSerializer):
         return value
 
 
-class StudyActivitySerializer(serializers.ModelSerializer):
+class ActivitiesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Study_Activities
         fields = ['id', 'study_session_id', 'Group', 'creation_time']
