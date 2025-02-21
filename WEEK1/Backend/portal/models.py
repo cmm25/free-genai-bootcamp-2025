@@ -19,6 +19,21 @@ class WordGroup(models.Model):
 
     def __str__(self):
         return self.name
+    def get_progress_stats(self):
+        total_words = self.words.count()
+        sessions = Study_Sessions.objects.filter(Group = self)
+        reviews = Word_Review.objects.filter(study_session_id__in=sessions)
+        unique_words_studied = reviews.values('word_id').distinct().count()
+        total_reviews = reviews.count()
+        correct_reviews = reviews.filter(correct = True ).count()
+        return {
+            'total_words': total_words,
+            'words_studied': unique_words_studied,
+            'progress_percentage': (unique_words_studied / total_words * 100) if total_words > 0 else 0,
+            'total_reviews': total_reviews,
+            'correct_reviews': correct_reviews,
+            'accuracy': (correct_reviews / total_reviews * 100) if total_reviews > 0 else 0
+        }
 class Study_Sessions(models.Model):
     Group = models.ForeignKey(WordGroup , on_delete = models.CASCADE, related_name = 'student_study_groups')
     creation_time = models.DateTimeField(auto_now_add = True)
