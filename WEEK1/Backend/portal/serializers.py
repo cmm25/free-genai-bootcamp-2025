@@ -3,19 +3,50 @@ from .models import (
     WordGroup,
     Words,
     Study_Activities,
-    Study_Sessions)
+    Study_Sessions,
+    WordCategory)
 from rest_framework import serializers
 
 
+class WordCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WordCategory
+        fields = ['id', 'name', 'description']
+
+
 class WordsSerializer(serializers.ModelSerializer):
+    correct_count = serializers.SerializerMethodField()
+    wrong_count = serializers.SerializerMethodField()
+    categories = WordCategorySerializer(many=True, read_only=True)
+    groups = serializers.SerializerMethodField()
+
     class Meta:
         model = Words
-        fields = ['Swahili', 'Pronounciation', 'English']
+        fields = [
+            'id', 'Swahili', 'Pronounciation', 'English',
+            'correct_count', 'wrong_count', 'categories', 'groups'
+        ]
         extra_kwargs = {
-            'Swahili': {'help_text': 'Enter the word in Swahili.'},
-            'Pronounciation': {'help_text': 'Provide phonetic guidance for correct pronunciation.'},
-            'English': {'help_text': 'English translation of the Swahili word.'}
+            'Swahili': {'help_text': 'Enter the word in Swahili'},
+            'Pronounciation': {'help_text': 'Provide phonetic guidance'},
+            'English': {'help_text': 'English translation'}
         }
+
+    def get_correct_count(self, obj):
+        return obj.review_stats['correct_count']
+
+    def get_wrong_count(self, obj):
+        return obj.review_stats['wrong_count']
+
+    def get_groups(self, obj):
+        return [{
+            'id': group.id,
+            'name': group.name,
+            'stats': obj.review_stats['by_group'].get(group.id, {
+                'correct_count': 0,
+                'wrong_count': 0
+            })
+        } for group in obj.word_groups.all()]
 
     def validate_Swahili(self, value):
         if not value.strip():
@@ -45,23 +76,31 @@ class WordsSerializer(serializers.ModelSerializer):
 
 
 class WordGroupSerializer(serializers.ModelSerializer):
-    words = WordsSerializer(many=True, read_only=True)
-    word_count = serializers.SerializerMethodField()
+    word_count = serializers.IntegerField(source='total_word_count', read_only=True)
+    stats = serializers.SerializerMethodField()
+    categories = WordCategorySerializer(many=True, read_only=True)
 
     class Meta:
         model = WordGroup
-        fields = ['id', 'name', 'words', 'word_count']
-        extra_kwargs = {
-            'name': {
-                'help_text': 'Name of the word group',
-                'required': True,
-                'min_length': 1,
-                'max_length': 100
-            }
+        fields = ['id', 'name', 'description', 'word_count', 'stats',
+                    'categories', 'created_at']
+
+    def get_stats(self, obj):
+        base_stats = {
+            'total_word_count': obj.total_word_count,
+            'sessions_count': obj.study_sessions_count,
+            'progress': obj.get_progress_stats()
         }
 
-    def get_word_count(self, obj):
-        return obj.words.count()
+        # Add category distribution
+        category_counts = {}
+        for word in obj.words.all():
+            for category in word.categories.all():
+                category_counts[category.name] = category_counts.get(
+                    category.name, 0) + 1
+
+        base_stats['category_distribution'] = category_counts
+        return base_stats
 
     def validate_name(self, value):
         if not value.strip():
@@ -70,19 +109,13 @@ class WordGroupSerializer(serializers.ModelSerializer):
 
 
 class WordReviewSerializer(serializers.ModelSerializer):
-    word = serializers.SerializerMethodField()
+    word_details = WordsSerializer(source='word_id', read_only=True)
 
     class Meta:
         model = Word_Review
-        fields = ['id', 'word', 'correct', 'creation_time', 'study_session_id']
+        fields = ['id', 'word_id', 'word_details',
+                    'study_session_id', 'correct', 'creation_time']
         read_only_fields = ['creation_time']
-
-    def get_word(self, obj):
-        return {
-            'id': obj.word_id.id,
-            'swahili': obj.word_id.Swahili,
-            'english': obj.word_id.English
-        }
 
     def validate_correct(self, value):
         if not isinstance(value, bool):
@@ -92,17 +125,19 @@ class WordReviewSerializer(serializers.ModelSerializer):
 
 
 class SessionsSerializer(serializers.ModelSerializer):
+    activity_name = serializers.CharField(
+        source='study_activity_id', read_only=True)
     group_name = serializers.CharField(source='Group.name', read_only=True)
-    reviews_count = serializers.SerializerMethodField()
+    review_items_count = serializers.IntegerField(read_only=True)
+    duration = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Study_Sessions
-        fields = ['id', 'Group', 'group_name', 'creation_time',
-                  'study_activity_id', 'reviews_count']
-        read_only_fields = ['creation_time']
-
-    def get_reviews_count(self, obj):
-        return obj.word_review_set.count()
+        fields = [
+            'id', 'activity_name', 'group_name', 'creation_time',
+            'end_time', 'review_items_count', 'duration'
+        ]
+        read_only_fields = ['creation_time', 'end_time']
 
     def validate_study_activity_id(self, value):
         if value < 0:
@@ -110,18 +145,8 @@ class SessionsSerializer(serializers.ModelSerializer):
         return value
 
 
-class ActivitiesSerializer(serializers.ModelSerializer):
-    group_name = serializers.CharField(source='Group.name', read_only=True)
-    session_info = serializers.SerializerMethodField()
-
+class StudyActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Study_Activities
-        fields = ['id', 'study_session_id', 'Group', 'group_name',
-                        'creation_time', 'session_info']
+        fields = ['id', 'study_session_id', 'Group', 'creation_time']
         read_only_fields = ['creation_time']
-
-    def get_session_info(self, obj):
-        return {
-            'session_id': obj.study_session_id.id,
-            'activity_id': obj.study_session_id.study_activity_id
-        }

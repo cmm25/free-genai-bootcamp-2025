@@ -5,6 +5,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import api_view
+from rest_framework import generics, filters
+from django.db.models import Count
+from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
 
 from .models import (
     Word_Review,
@@ -12,7 +16,7 @@ from .models import (
     Words,
     Study_Activities,
     Study_Sessions)
-from .serializers import(
+from .serializers import (
     WordGroupSerializer,
     WordReviewSerializer,
     WordsSerializer,
@@ -22,27 +26,27 @@ from .serializers import(
 
 # Create your views here.
 
+
 class ResultsSetPagination(PageNumberPagination):
     page_size = 100
     page_size_query_param = 'items_per_page'
     max_page_size = 500
-    
-    
+
 
 class StudyProgressView(APIView):
-    def get(self,request):
+    def get(self, request):
         group_id = request.query_params.get('group_id')
         try:
             if group_id:
-                current_group = WordGroup.objects.get(id = group_id)
+                current_group = WordGroup.objects.get(id=group_id)
             else:
                 current_group = WordGroup.objects.earliest('id')
-            
+
             current_group_stats = current_group.get_progress_stats()
-            
+
             all_groups = WordGroup.objects.all()
             groups_progress = []
-            
+
             for group in all_groups:
                 stats = group.get_progress_stats()
                 groups_progress.append({
@@ -54,8 +58,9 @@ class StudyProgressView(APIView):
                     'accuracy': round(stats['accuracy'], 2)
                 })
             total_available_words = Words.objects.count()
-            total_words_studied = Word_Review.objects.values('word_id').distinct().count()
-            
+            total_words_studied = Word_Review.objects.values(
+                'word_id').distinct().count()
+
             data = {
                 "current_group": {
                     "id": current_group.id,
@@ -86,3 +91,96 @@ class StudyProgressView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+
+class DashboardLastSessionView(APIView):
+    """
+    Returns information about the most recent study session
+    """
+
+    def get(self, request):
+        try:
+            last_session = Study_Sessions.objects.select_related('Group').latest('creation_time')
+
+            return Response({
+                "id": last_session.id,
+                "group_id": last_session.Group.id,
+                "created_at": last_session.creation_time,
+                "study_activity_id": last_session.study_activity_id,
+                "group_name": last_session.Group.name
+            })
+        except Study_Sessions.DoesNotExist:
+            return Response({
+                "error": "No study sessions found"
+            }, status=status.HTTP_404_NOT_FOUND)
+
+
+class DashboardQuickStatsView(APIView):
+    def get(self, request):
+        # Get total reviews and correct reviews
+        total_reviews = Word_Review.objects.count()
+        correct_reviews = Word_Review.objects.filter(correct=True).count()
+        success_rate = (correct_reviews / total_reviews * 100) if total_reviews > 0 else 0
+        total_sessions = Study_Sessions.objects.count()
+        active_groups = WordGroup.objects.filter(
+            student_study_groups__isnull=False
+        ).distinct().count()
+        today = timezone.now().date()
+        sessions_by_date = Study_Sessions.objects.values('creation_time__date').distinct()
+        streak_days = 0
+
+        for i in range(7):
+            check_date = today - timezone.timedelta(days=i)
+            if not sessions_by_date.filter(creation_time__date=check_date).exists():
+                break
+            streak_days += 1
+
+        return Response({
+            "success_rate": round(success_rate, 1),
+            "total_study_sessions": total_sessions,
+            "total_active_groups": active_groups,
+            "study_streak_days": streak_days
+        })
+
+
+class StudyActivityDetailView(generics.RetrieveAPIView):
+    queryset = Study_Activities.objects.all()
+    serializer_class = ActivitiesSerializer
+    lookup_field = 'id'
+
+
+class StudyActivitySessionsView(generics.ListAPIView):
+    serializer_class = SessionsSerializer
+    pagination_class = ResultsSetPagination
+
+    def get_queryset(self):
+        activity_id = self.kwargs['id']
+        return Study_Sessions.objects.filter(
+            study_activity_id=activity_id
+        ).order_by('-creation_time')
+
+
+class StudyActivityCreateView(APIView):
+    def post(self, request):
+        group_id = request.data.get('group_id')
+        study_activity_id = request.data.get('study_activity_id')
+
+        try:
+            group = WordGroup.objects.get(id=group_id)
+            session = Study_Sessions.objects.create(
+                Group=group,
+                study_activity_id=study_activity_id
+            )
+
+            return Response({
+                "id": session.id,
+                "group_id": group_id
+            }, status=status.HTTP_201_CREATED)
+
+        except WordGroup.DoesNotExist:
+            return Response({
+                "error": "Group not found"
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                "error": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
