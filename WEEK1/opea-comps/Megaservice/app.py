@@ -64,11 +64,11 @@ class ExampleService:
         try:
             # Format the request for Ollama
             ollama_request = {
-                "model": request.model or "llama3.2:1b",  # or whatever default model you're using
+                "model": request.model or "llama3.2:1b",  
                 "messages": [
                     {
                         "role": "user",
-                        "content": request.messages  # assuming messages is a string
+                        "content": request.messages  
                     }
                 ],
                 "stream": False  # disable streaming for now
