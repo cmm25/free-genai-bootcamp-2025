@@ -212,6 +212,7 @@ class GroupWordsView(generics.ListAPIView):
     """
     serializer_class = WordsSerializer
     pagination_class = ResultsSetPagination
+    permission_classes = []  # Temporarily disable authentication requirement
 
     def get_queryset(self):
         group_id = self.kwargs['id']

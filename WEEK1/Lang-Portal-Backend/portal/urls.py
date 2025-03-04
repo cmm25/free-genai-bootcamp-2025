@@ -1,7 +1,11 @@
 from django.urls import path
+from rest_framework.authtoken import views as auth_views
 from . import views
 
 urlpatterns = [
+    # Authentication endpoints
+     path('auth/token/', auth_views.obtain_auth_token, name='api-token'),
+
      # Dashboard endpoints
      path('dashboard/last_study_session/',
           views.DashboardLastSessionView.as_view(),
