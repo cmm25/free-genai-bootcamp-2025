@@ -11,6 +11,15 @@ st.set_page_config(
     page_icon="🎧",
     layout="wide"
 )
+def load_stored_questions():
+    questions_file = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "backend/data/stored_questions.json"
+    )
+    if os.path.exists(questions_file):
+        with open(questions_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {}
 def save_question(question, practice_type, topic, audio_file=None):
     """Save a generated question to JSON file"""
     questions_file = os.path.join(
