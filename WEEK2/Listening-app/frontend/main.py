@@ -47,10 +47,10 @@ def save_question(question, practice_type, topic, audio_file=None):
     
     return question_id
 def stage():
-    if 'question_generator' not in st.session_state:
-        st.session_state.question_generator = QuestionGenerator()
-    if 'audio_generator' not in st.session_state:
-        st.session_state.audio_generator = AudioGenerator()
+    # if 'question_generator' not in st.session_state:
+    #     st.session_state.question_generator = QuestionGenerator()
+    # if 'audio_generator' not in st.session_state:
+    #     st.session_state.audio_generator = AudioGenerator()
     if 'current_question' not in st.session_state:
         st.session_state.current_question = None
     if 'feedback' not in st.session_state:
