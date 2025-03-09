@@ -13,7 +13,9 @@ from transformers import (
     SpeechT5Processor,
     SpeechT5ForTextToSpeech,
     SpeechT5HifiGan,
+    AutoModelForTextToSpeech,
 )
+
 import numpy as np
 import soundfile as sf
 import re
@@ -25,7 +27,6 @@ print(f"Transformers version: {transformers_version}")
 
 class AudioGenerator:
     def __init__(self):
-        # Initialize TTS models from Hugging Face
         self.tts_models = {
             "mms": {
                 "male": "facebook/mms-tts",
@@ -104,7 +105,6 @@ class AudioGenerator:
         )
         response = self.text_tokenizer.decode(
             outputs[0], skip_special_tokens=True)
-
         return response
 
     def _create_default_conversation(self, question: Dict) -> List[Tuple[str, str, str]]:
@@ -129,10 +129,8 @@ class AudioGenerator:
                 if line:
                     parts.append(
                         (current_speaker, line, speaker_gender[current_speaker]))
-                    # Alternate speakers
                     current_speaker = "Speaker2" if current_speaker == "Speaker1" else "Speaker1"
 
-        # Add question
         if "Question" in question:
             parts.append(("Announcer", question["Question"], "male"))
 
@@ -184,10 +182,7 @@ class AudioGenerator:
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                # Generate conversation format using local model
                 response = self._generate_conversation_format(question)
-
-                # Parse the response into speaker parts
                 parts = []
                 current_speaker = None
                 current_gender = None
@@ -280,8 +275,6 @@ class AudioGenerator:
 
             if service == "mms":
                 try:
-                    # Try direct import for newer transformers versions
-                    from transformers import AutoModelForTextToSpeech
                     self.loaded_processors[model_key] = AutoProcessor.from_pretrained(
                         model_name)
                     self.loaded_models[model_key] = AutoModelForTextToSpeech.from_pretrained(
@@ -302,14 +295,12 @@ class AudioGenerator:
                 self.loaded_models[model_key] = SpeechT5ForTextToSpeech.from_pretrained(
                     model_name)
 
-                # Load vocoder if not already loaded
                 if "vocoder" not in self.loaded_models:
                     self.loaded_models["vocoder"] = SpeechT5HifiGan.from_pretrained(
                         "microsoft/speecht5_hifigan")
 
                 # Load speaker embeddings if not already loaded
                 if self.speaker_embeddings is None:
-                    # Create random speaker embeddings for different voices
                     self.speaker_embeddings = {
                         "male": torch.randn(1, 512) * 0.5,
                         "female": torch.randn(1, 512) * 0.5,
@@ -325,12 +316,10 @@ class AudioGenerator:
         Get an appropriate voice for the given gender and speaker
         Returns a tuple of (service, voice_type)
         """
-        # Rotate through services for variety
         service = self.tts_services[self.current_service_index]
         self.current_service_index = (
             self.current_service_index + 1) % len(self.tts_services)
 
-        # Special case for announcer
         if speaker and speaker.lower() == "announcer":
             return service, "announcer"
 
@@ -364,7 +353,7 @@ class AudioGenerator:
 
         with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
             sf.write(temp_file.name, output.numpy(),
-                     model.config.sampling_rate, format="mp3")
+                        model.config.sampling_rate, format="mp3")
             return temp_file.name
 
     def _generate_speecht5_audio(self, text: str, voice_type: str) -> str:
@@ -466,8 +455,8 @@ class AudioGenerator:
             current_section = None
 
             # Generate silence files for pauses
-            long_pause = self.generate_silence(2000)  # 2 second pause
-            short_pause = self.generate_silence(500)  # 0.5 second pause
+            long_pause = self.generate_silence(2000)  
+            short_pause = self.generate_silence(500)  
 
             for speaker, text, gender in parts:
                 # Detect section changes and add appropriate pauses
