@@ -7,7 +7,6 @@ from datetime import datetime
 import torch
 from transformers import (
     AutoProcessor,
-    AutoModelForTextToSpeech,
     AutoModelForSeq2SeqLM,
     AutoTokenizer,
     set_seed,
@@ -18,6 +17,10 @@ from transformers import (
 import numpy as np
 import soundfile as sf
 import re
+
+# Add this line to check transformers version
+from transformers import __version__ as transformers_version
+print(f"Transformers version: {transformers_version}")
 
 
 class AudioGenerator:
@@ -36,7 +39,7 @@ class AudioGenerator:
             },
         }
 
-        self.mms_speakers = {"male": "SW_3","female": "SW_1", "announcer": "SW_2"}
+        self.mms_speakers = {"male": "SW_3", "female": "SW_1", "announcer": "SW_2"}
 
         self.tts_services = ["mms", "speecht5"]
         self.current_service_index = 0
@@ -276,11 +279,24 @@ class AudioGenerator:
             model_name = self.tts_models[service][voice_type]
 
             if service == "mms":
-                self.loaded_processors[model_key] = AutoProcessor.from_pretrained(
-                    model_name)
-                self.loaded_models[model_key] = AutoModelForTextToSpeech.from_pretrained(
-                    model_name)
-            elif service == "speecht5":
+                try:
+                    # Try direct import for newer transformers versions
+                    from transformers import AutoModelForTextToSpeech
+                    self.loaded_processors[model_key] = AutoProcessor.from_pretrained(
+                        model_name)
+                    self.loaded_models[model_key] = AutoModelForTextToSpeech.from_pretrained(
+                        model_name)
+                except ImportError:
+                    # Fallback to SpeechT5 if MMS isn't available
+                    print("MMS not available, falling back to SpeechT5")
+                    service = "speecht5"
+                    model_name = self.tts_models["speecht5"][voice_type]
+                    self.loaded_processors[model_key] = SpeechT5Processor.from_pretrained(
+                        model_name)
+                    self.loaded_models[model_key] = SpeechT5ForTextToSpeech.from_pretrained(
+                        model_name)
+
+            if service == "speecht5":
                 self.loaded_processors[model_key] = SpeechT5Processor.from_pretrained(
                     model_name)
                 self.loaded_models[model_key] = SpeechT5ForTextToSpeech.from_pretrained(
