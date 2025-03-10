@@ -3,3 +3,4 @@ BootCamp
 .qodo
 db.*
 *.env
+__pycache__
