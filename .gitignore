@@ -2,3 +2,4 @@
 BootCamp
 .qodo
 db.*
+*.env

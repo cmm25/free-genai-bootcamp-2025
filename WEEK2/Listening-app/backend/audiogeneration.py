@@ -12,8 +12,7 @@ from transformers import (
     set_seed,
     SpeechT5Processor,
     SpeechT5ForTextToSpeech,
-    SpeechT5HifiGan,
-    AutoModelForTextToSpeech,
+    SpeechT5HifiGan
 )
 
 import numpy as np
@@ -40,7 +39,7 @@ class AudioGenerator:
             },
         }
 
-        self.mms_speakers = {"male": "SW_3", "female": "SW_1", "announcer": "SW_2"}
+        self.mms_speakers = {"male": "SW_3","female": "SW_1", "announcer": "SW_2"}
 
         self.tts_services = ["mms", "speecht5"]
         self.current_service_index = 0
@@ -277,11 +276,16 @@ class AudioGenerator:
                 try:
                     self.loaded_processors[model_key] = AutoProcessor.from_pretrained(
                         model_name)
-                    self.loaded_models[model_key] = AutoModelForTextToSpeech.from_pretrained(
-                        model_name)
-                except ImportError:
+                    from transformers import pipeline
+                    self.loaded_models[model_key] = pipeline(
+                        "text-to-speech",
+                        model=model_name
+                    )
+                    print(f"Loaded MMS model using pipeline: {model_name}")
+                except Exception as e:
                     # Fallback to SpeechT5 if MMS isn't available
-                    print("MMS not available, falling back to SpeechT5")
+                    print(
+                        f"MMS not available: {str(e)}, falling back to SpeechT5")
                     service = "speecht5"
                     model_name = self.tts_models["speecht5"][voice_type]
                     self.loaded_processors[model_key] = SpeechT5Processor.from_pretrained(
@@ -298,8 +302,6 @@ class AudioGenerator:
                 if "vocoder" not in self.loaded_models:
                     self.loaded_models["vocoder"] = SpeechT5HifiGan.from_pretrained(
                         "microsoft/speecht5_hifigan")
-
-                # Load speaker embeddings if not already loaded
                 if self.speaker_embeddings is None:
                     self.speaker_embeddings = {
                         "male": torch.randn(1, 512) * 0.5,
@@ -338,23 +340,33 @@ class AudioGenerator:
         """Generate audio using MMS model from Hugging Face"""
         model, processor = self._load_model("mms", voice_type)
 
-        # Get speaker ID
-        speaker_id = self.mms_speakers[voice_type]
-        inputs = processor(text=text, return_tensors="pt")
+        # Check if we're using a pipeline or direct model
+        if hasattr(model, "generate_speech"):
+            # Original approach for when AutoModelForTextToSpeech is available
+            speaker_id = self.mms_speakers[voice_type]
+            inputs = processor(text=text, return_tensors="pt")
+            speaker_embeddings = torch.tensor(
+                [[1.0 if x == speaker_id else 0.0 for x in range(len(self.mms_speakers))]])
+            inputs["speaker_embeddings"] = speaker_embeddings
 
-        # Add speaker embedding
-        speaker_embeddings = torch.tensor(
-            [[1.0 if x == speaker_id else 0.0 for x in range(len(self.mms_speakers))]])
-        inputs["speaker_embeddings"] = speaker_embeddings
+            with torch.no_grad():
+                output = model.generate_speech(**inputs)
 
-        # Generate audio
-        with torch.no_grad():
-            output = model.generate_speech(**inputs)
+            with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
+                sf.write(temp_file.name, output.numpy(), model.config.sampling_rate, format="mp3")
+                return temp_file.name
+        else:
+            speaker_id = self.mms_speakers[voice_type]
+            forward_params = {
+                "speaker_id": speaker_id
+            }
 
-        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
-            sf.write(temp_file.name, output.numpy(),
-                        model.config.sampling_rate, format="mp3")
-            return temp_file.name
+            result = model(text, forward_params=forward_params)
+
+            # Save to temporary file
+            with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
+                sf.write(temp_file.name,result["audio"], result["sampling_rate"], format="mp3")
+                return temp_file.name
 
     def _generate_speecht5_audio(self, text: str, voice_type: str) -> str:
         """Generate audio using SpeechT5 model from Microsoft"""
@@ -448,18 +460,16 @@ class AudioGenerator:
         output_file = os.path.join(self.audio_dir, f"question_{timestamp}.mp3")
 
         try:
-            # Parse conversation into parts
             parts = self.parse_conversation(question)
 
             audio_parts = []
             current_section = None
 
             # Generate silence files for pauses
-            long_pause = self.generate_silence(2000)  
-            short_pause = self.generate_silence(500)  
+            long_pause = self.generate_silence(2000)
+            short_pause = self.generate_silence(500)
 
             for speaker, text, gender in parts:
-                # Detect section changes and add appropriate pauses
                 if speaker.lower() == "announcer":
                     # Introduction
                     if any(word in text.lower() for word in ["sikiliza", "mazungumzo", "kisha"]):

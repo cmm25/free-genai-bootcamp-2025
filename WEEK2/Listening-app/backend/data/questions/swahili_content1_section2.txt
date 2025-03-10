@@ -1,0 +1,17 @@
+<question> **Introduction:** Mwanaume na mwanamke wanazungumza kuhusu tamasha la kitamaduni la kila mwaka.
+Conversation:
+
+Mwanaume: Habari, umewahi kuhudhuria tamasha la kitamaduni la kila mwaka?
+Mwanamke: Ndio, nilihudhuria tamasha la mwaka jana mwezi wa nane.
+Mwanaume: Lilifanyika wapi?
+Mwanamke: Katika Kiwanja cha Enzi ya kabla ya Historia cha Olorgesailie.
+Mwanaume: Ulifurahia nini zaidi kwenye tamasha hilo?
+Mwanamke: Nilifurahia sana kuona ngoma za kitamaduni na maonyesho ya utamaduni wa Wamaasai.
+Question: Tamasha la kitamaduni la kila mwaka hufanyika lini?
+
+Options:
+
+Mwezi wa sita
+Mwezi wa saba
+Mwezi wa nane
+Mwezi wa tisa </question>

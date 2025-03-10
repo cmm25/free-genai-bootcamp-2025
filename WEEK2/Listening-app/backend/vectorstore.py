@@ -18,7 +18,7 @@ class SwahiliEmbeddingFunction(embedding_functions.EmbeddingFunction):
             return [[0.0] * 512 for _ in range(len(texts))]
 
 class QuestionVectorStore:
-    def __init__(self, persist_directory: str = 'backend/data/vectorstore'):
+    def __init__(self, persist_directory: str = './data/vectorstore'):
         self.persist_directory = persist_directory
         self.client = chromadb.PersistentClient(path=persist_directory)
         self.embedding_fn = SwahiliEmbeddingFunction()
@@ -174,12 +174,10 @@ class QuestionVectorStore:
             print(f"Indexed {len(questions)} questions from {filename}")
 
 if __name__ == "__main__":
-    # Example usage
     store = QuestionVectorStore()
     
     question_files = [
-        ("backend/data/questions/swahili_content1_section2.txt", 2),
-        ("backend/data/questions/swahili_content1_section3.txt", 3)
+        ("./data/questions/swahili_content1_section2.txt", 2)
     ]
     
     for filename, section_num in question_files:
