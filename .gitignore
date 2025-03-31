@@ -4,3 +4,4 @@ BootCamp
 db.*
 *.env
 __pycache__
+*.log
