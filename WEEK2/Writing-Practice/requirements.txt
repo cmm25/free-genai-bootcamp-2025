@@ -3,5 +3,4 @@ openai
 pillow
 numpy
 pandas
-paddlepaddle
-paddleocr>=2.0.1
+mangaocr
