@@ -10,12 +10,12 @@ import pandas as pd
 from PIL import Image
 import numpy as np
 
-# Try importing paddleocr, but handle case where it's not available
+# Try importing mangaocr, but handle case where it's not available
 try:
-    from paddleocr import PaddleOCR
-    HAS_PADDLE_OCR = True
+    from manga_ocr import MangaOcr
+    HAS_MANGA_OCR = True
 except ImportError:
-    HAS_PADDLE_OCR = False
+    HAS_MANGA_OCR = False
 
 logger = logging.getLogger('japanese_writing_app')
 logger.setLevel(logging.DEBUG)
@@ -54,47 +54,37 @@ class JapaneseWritingApp:
         self.render_page()
 
     def initialize_ocr(self):
-        if not HAS_PADDLE_OCR:
-            st.sidebar.warning("OCR functionality is disabled. Install PaddleOCR to enable handwriting analysis.")
+        if not HAS_MANGA_OCR:
+            st.sidebar.warning("OCR functionality is disabled. Install MangaOCR to enable handwriting analysis.")
             self.ocr = None
             return
             
         try:
-            self.ocr = PaddleOCR(
-                lang='japan',
-                use_angle_cls=True,
-                use_gpu=False,  
-                show_log=False
-            )
-            logger.info("PaddleOCR initialized successfully")
+            # Initialize MangaOCR
+            self.ocr = MangaOcr()
+            logger.info("MangaOCR initialized successfully")
         except Exception as e:
-            logger.error(f"Error initializing PaddleOCR: {str(e)}")
+            logger.error(f"Error initializing MangaOCR: {str(e)}")
             st.sidebar.error(f"Error initializing OCR: {str(e)}")
             self.ocr = None
 
     def process_image_with_ocr(self, image):
-        if not HAS_PADDLE_OCR or not self.ocr:
-            return "OCR not available. Please install PaddleOCR."
+        if not HAS_MANGA_OCR or not self.ocr:
+            return "OCR not available. Please install MangaOCR."
             
         try:
+            # Convert image to RGB if needed
             if image.mode != 'RGB':
                 image = image.convert('RGB')
 
-            result = self.ocr.ocr(np.array(image), cls=True)
+            # MangaOCR processes the image directly
+            result = self.ocr(image)
             
-            extracted_text = []
-            for line in result:
-                if line:
-                    text = line[-1][0] 
-                    if any([c in 'ぁあぃいぅうぇえぉおかがきぎくぐけげこごさざしじすずせぜそぞただちぢっつづてでとどなにぬねのはばぱひびぴふぶぷへべぺほぼぽまみむめもゃやゅゆょよらりるれろゎわゐゑをんゔゕゖァアィイゥウェエォオカガキギクグケゲコゴサザシジスズセゼソゾタダチヂッツヅテデトドナニヌネノハバパヒビピフブプヘベペホボポマミムメモャヤュユョヨラリルレロヮワヰヱヲンヴヵヶッャュョー゛゜、。？！「」（）・…' for c in text]):
-                        extracted_text.append(text)
-
-            final_text = ' '.join(extracted_text)
-
-            if not final_text:
+            # MangaOCR returns text directly, no need for additional processing
+            if not result.strip():
                 return ""
             
-            return final_text
+            return result
             
         except Exception as e:
             logger.error(f"Error processing image with OCR: {str(e)}")
@@ -302,8 +292,8 @@ Romaji: {fallback_romaji}"""
                     if st.button("Analyze My Handwriting"):
                         if st.session_state.current_japanese_sentence:
                             with st.spinner("Analyzing your handwriting and grading..."):
-                                if not HAS_PADDLE_OCR:
-                                    st.warning("OCR functionality is not available. Please install PaddleOCR package.")
+                                if not HAS_MANGA_OCR:
+                                    st.warning("OCR functionality is not available. Please install MangaOCR package.")
                                     extracted_text = "OCR not available. Using sample text for demo purposes."
                                 else:
                                     extracted_text = self.process_image_with_ocr(image)
@@ -337,9 +327,10 @@ Romaji: {fallback_romaji}"""
         The system will extract the text and provide feedback.
         """)
         
-        if not HAS_PADDLE_OCR:
-            st.warning("PaddleOCR is not installed. This feature is currently disabled.")
-            st.info("To enable OCR functionality, please install PaddleOCR package:")
+        if not HAS_MANGA_OCR:
+            st.warning("MangaOCR is not installed. This feature is currently disabled.")
+            st.info("To enable OCR functionality, please install MangaOCR package:")
+            st.code("pip install manga-ocr")
             return
             
         uploaded_file = st.file_uploader("Upload handwritten Japanese image", type=["jpg", "jpeg", "png"])
@@ -400,6 +391,7 @@ Romaji: {fallback_romaji}"""
         - Focus on basic sentence structures
         - Regular practice is key to improvement
         """)
+        
 
     def render_page(self):
         if st.session_state.nav_selection == "🏠 Dashboard":
