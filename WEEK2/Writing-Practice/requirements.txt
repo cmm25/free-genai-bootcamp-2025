@@ -4,4 +4,4 @@ pillow
 numpy
 pandas
 manga-ocr
-torch==1.13.1+cpu
+torch>=2.2.0
