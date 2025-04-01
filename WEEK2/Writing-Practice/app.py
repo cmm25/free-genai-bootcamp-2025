@@ -10,8 +10,6 @@ import pandas as pd
 from PIL import Image
 import numpy as np
 
-st.set_option('server.fileWatcherType', 'none')
-
 try:
     from manga_ocr import MangaOcr
     HAS_MANGA_OCR = True
