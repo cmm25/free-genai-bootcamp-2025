@@ -3,4 +3,4 @@ openai
 pillow
 numpy
 pandas
-mangaocr
+manga-ocr
